@@ -15,7 +15,7 @@ type CToken =
 
 let rec split (s:List<char>) : List<Token>  =
     let isDigit c = c >= '0' && c <= '9'
-    printfn "Tokenize: %A" s
+//    printfn "Tokenize: %A" s
 //    let appendDigit (digit:char) (tail:List<char>) : List<CToken> = 
 //        let rest = split tail
 //        match rest with
@@ -69,20 +69,23 @@ let rec parseRec (input:List<Token>) : Expression*(List<Token>) =
         | [T_Number n] -> Number (n |> uint64), [] 
         | T_StartParan :: tail -> parseRec tail
         
-let rec eval (tokens:List<Token>) : List<Token> =
-    printfn "EVAL %A" (tokensToString tokens)  
+let rec eval (greedy:bool) (tokens:List<Token>) : List<Token> =
+//    printfn "EVAL %A %A" greedy (tokensToString tokens)   
     match tokens with
     | [T_Number n] -> [T_Number n]
-    | T_Number a :: (op :: (T_StartParan :: rest)) -> eval ((T_Number a)::(op::(eval (T_StartParan :: rest))))
+    | T_Number a :: (op :: (T_StartParan :: rest)) -> eval false ((T_Number a)::(op::(eval false (T_StartParan :: rest))))
     | T_Number a :: (T_EndParan :: _) -> tokens 
-    | T_Number a :: (T_Plus :: (T_Number b :: tail)) -> eval ((T_Number (a+b)) :: tail)
-    | T_Number a :: (T_Mult :: (T_Number b :: tail)) -> eval ((T_Number (a*b)) :: tail)  
-    | T_StartParan :: (T_Number n) :: T_EndParan :: rest -> eval (T_Number n :: rest)
-    | T_StartParan :: tail -> eval (T_StartParan :: (eval tail)) 
+    | T_Number a :: (T_Plus :: (T_Number b :: tail)) -> eval greedy ((T_Number (a+b)) :: tail)
+    | T_Number a :: (T_Mult :: (T_Number b :: tail)) -> eval greedy ((T_Number (a*b)) :: tail)  
+    | T_StartParan :: (T_Number n) :: T_EndParan :: rest ->
+        let c = (T_Number n :: rest) in if greedy then eval true c else c
+    | T_StartParan :: tail -> eval greedy (T_StartParan :: (eval greedy tail)) 
 
-let run (input:String) : Token =
+let run (input:String) : uint64 =
     let chars = input.ToCharArray () |> Seq.toList
     let tokens = tokenize input
-    let result = eval tokens
-    printfn "Result: %A" result 
-    List.head result 
+    let result = eval true tokens
+//    printfn "Result: %A" result
+    match List.head result with
+    | T_Number n -> n  
+     
