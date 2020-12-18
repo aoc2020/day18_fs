@@ -69,23 +69,45 @@ let rec parseRec (input:List<Token>) : Expression*(List<Token>) =
         | [T_Number n] -> Number (n |> uint64), [] 
         | T_StartParan :: tail -> parseRec tail
         
-let rec eval (greedy:bool) (tokens:List<Token>) : List<Token> =
+let rec eval1 (greedy:bool) (tokens:List<Token>) : List<Token> =
 //    printfn "EVAL %A %A" greedy (tokensToString tokens)   
     match tokens with
     | [T_Number n] -> [T_Number n]
-    | T_Number a :: (op :: (T_StartParan :: rest)) -> eval false ((T_Number a)::(op::(eval false (T_StartParan :: rest))))
+    | T_Number a :: (op :: (T_StartParan :: rest)) -> eval1 false ((T_Number a)::(op::(eval1 false (T_StartParan :: rest))))
     | T_Number a :: (T_EndParan :: _) -> tokens 
-    | T_Number a :: (T_Plus :: (T_Number b :: tail)) -> eval greedy ((T_Number (a+b)) :: tail)
-    | T_Number a :: (T_Mult :: (T_Number b :: tail)) -> eval greedy ((T_Number (a*b)) :: tail)  
+    | T_Number a :: (T_Plus :: (T_Number b :: tail)) -> eval1 greedy ((T_Number (a+b)) :: tail)
+    | T_Number a :: (T_Mult :: (T_Number b :: tail)) -> eval1 greedy ((T_Number (a*b)) :: tail)  
     | T_StartParan :: (T_Number n) :: T_EndParan :: rest ->
-        let c = (T_Number n :: rest) in if greedy then eval true c else c
-    | T_StartParan :: tail -> eval greedy (T_StartParan :: (eval greedy tail)) 
+        let c = (T_Number n :: rest) in if greedy then eval1 true c else c
+    | T_StartParan :: tail -> eval1 greedy (T_StartParan :: (eval1 greedy tail)) 
 
-let run (input:String) : uint64 =
+let run1 (input:String) : uint64 =
     let chars = input.ToCharArray () |> Seq.toList
     let tokens = tokenize input
-    let result = eval true tokens
+    let result = eval1 true tokens
+//    printfn "Result: %A" result
+    match List.head result with
+    | T_Number n -> n
+    
+let rec eval2 (greedy:bool) (tokens:List<Token>) : List<Token> =
+//    printfn "EVAL2 %A %A" greedy (tokensToString tokens)   
+    match tokens with
+    | [T_Number n] -> [T_Number n]
+    | T_Number a :: (op :: (T_StartParan :: rest)) -> eval2 false ((T_Number a)::(op::(eval2 false (T_StartParan :: rest))))
+    | T_Number a :: (T_EndParan :: _) -> tokens 
+    | T_Number a :: (T_Plus :: (T_Number b :: tail)) -> eval2 greedy ((T_Number (a+b)) :: tail)
+    | T_Number a :: (T_Mult :: (T_Number b :: tail)) ->
+        let tailres = eval2 false (T_Number b :: tail)
+        match tailres with
+        | (T_Number c) :: rest -> eval2 greedy ((T_Number (a*c)) :: rest) 
+    | T_StartParan :: (T_Number n) :: T_EndParan :: rest ->
+        let c = (T_Number n :: rest) in if greedy then eval2 true c else c
+    | T_StartParan :: tail -> eval2 greedy (T_StartParan :: (eval2 greedy tail)) 
+
+let run2 (input:String) : uint64 =
+    let chars = input.ToCharArray () |> Seq.toList
+    let tokens = tokenize input
+    let result = eval2 true tokens
 //    printfn "Result: %A" result
     match List.head result with
     | T_Number n -> n  
-     

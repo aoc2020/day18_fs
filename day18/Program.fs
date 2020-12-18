@@ -19,11 +19,13 @@ let readInput (filePath:String) : String[] =
 [<EntryPoint>]
 let main argv =
       let lines = readInput input |> Seq.toArray
-      let results = lines |> Array.map  run
+//      let results = lines |> Array.map run1
+//      let result = results |> Seq.sum
+      printfn "%A" (run2 "1 + 2 * 3 + 4 * 5 + 6")
+      
+      let results = lines |> Array.map run2
       let result = results |> Seq.sum
-//    printfn "%A" (run "2 * 3 + (4 * 5)") // 26 
-//    printfn "%A" (run "5 + (8 * 3 + 9 + 3 * 4 * 3)") // becomes 437.
-//    printfn "%A" (run "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))") // becomes 12240.
-//      printfn "%A" (run "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2") // becomes 13632.
-      printfn "Result! %A" result    
+      printfn "Result 2! %A" result
+
       0 // return an integer exit code
+      
